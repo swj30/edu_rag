@@ -41,6 +41,8 @@ def load_documents_from_directory(directory_path: str) -> [Document]:
     加载指定目录中的文档，放入一个集合中
     :param directory_path:  文档目录
     :return: 文档的集合
+    Document的数据格式：
+        page_content="Hello, world!",    metadata={"source": "https://example.com"}
     """
 
     # for root , _ ,files in os.walk(directory_path): 递归遍历一个目录(包含子目录)下的所有文件
@@ -139,7 +141,7 @@ def process_documents(documents: [Document]) -> [Document]:
 
 
 if __name__ == '__main__':
-    documents = load_documents_from_directory("D:/workspace/ai3/py/edu_rag/data/ai_data")
+    documents = load_documents_from_directory("D:/workspace/pyproject/edu_rag/data/ai_data")
     chunks = process_documents( documents)
     for chunk in chunks:
         print(chunk)

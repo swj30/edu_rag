@@ -26,7 +26,7 @@ class VectorStore:
             device = 'cpu'
 
         # 指定模型位置
-        bge_m3_model_path = "E:/1期/资料/edurag/models/bge-m3"
+        bge_m3_model_path = "D:/workspace/pyproject/models/bge-m3"
 
         # 创建本地模型 bge-m3
         self.embedding = BGEM3EmbeddingFunction(model_name_or_path=bge_m3_model_path, use_fp16=True, device=device)
@@ -136,7 +136,7 @@ vector_store = VectorStore()
 
 if __name__ == '__main__':
     # 加载 拆分文档
-    documents = load_documents_from_directory("D:/workspace/ai3/py/edu_rag/data/ai_data")
+    documents = load_documents_from_directory("D:/workspace/pyproject/edu_rag/data/ai_data")
     chunks = process_documents(documents)
     # 向量化并保存
     vector_store.add_documents(chunks)
