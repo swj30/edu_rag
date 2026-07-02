@@ -218,7 +218,7 @@ class VectorStore:
                 doc for _, doc in sorted(zip(scores, parent_docs), reverse=True)
             ]
             # 返回前 m 个重排序后的文档
-            print(ranked_parent_docs)
+            # print(ranked_parent_docs)
             return ranked_parent_docs[: conf.CANDIDATE_M]
 
 
