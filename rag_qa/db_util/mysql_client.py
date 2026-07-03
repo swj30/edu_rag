@@ -6,6 +6,8 @@ from base.logger import logger
 
 
 class MySQLClient:
+
+
     def __init__(self):
         try:
             # 连接 MySQL 数据库
@@ -83,10 +85,10 @@ class MySQLClient:
             # 执行 SQL 查询，获取最近 5 轮对话
             self.cursor.execute(
                 """
-                    SELECT question, answer
-                    FROM conversations
-                    WHERE session_id = %s
-                    ORDER BY timestamp DESC
+                SELECT question, answer
+                FROM conversations
+                WHERE session_id = %s
+                ORDER BY timestamp DESC
                     LIMIT %s
                 """,
                 (session_id, 5),
@@ -104,9 +106,7 @@ class MySQLClient:
             return []
 
     # 更新会话历史
-    def update_session_history(
-        self, session_id: str, question: str, answer: str
-    ) -> list:
+    def update_session_history(self, session_id: str, question: str, answer: str) -> list:
         """更新会话历史到MySQL，保留最近5轮对话"""
         try:
             # 插入新的对话记录
@@ -114,7 +114,7 @@ class MySQLClient:
                 """
                 INSERT INTO conversations (session_id, question, answer, timestamp)
                 VALUES (%s, %s, %s, NOW())
-            """,
+                """,
                 (session_id, question, answer),
             )
             # 获取更新后的对话历史
@@ -122,17 +122,16 @@ class MySQLClient:
             # 删除超出 5 轮的旧记录
             self.cursor.execute(
                 """
-                DELETE FROM conversations
-                WHERE session_id = %s AND id NOT IN (
-                    SELECT id FROM (
-                        SELECT id
-                        FROM conversations
-                        WHERE session_id = %s
-                        ORDER BY timestamp DESC
-                        LIMIT %s
-                    ) AS sub
-                )
-            """,
+                DELETE
+                FROM conversations
+                WHERE session_id = %s
+                  AND id NOT IN (SELECT id
+                                 FROM (SELECT id
+                                       FROM conversations
+                                       WHERE session_id = %s
+                                       ORDER BY timestamp DESC
+                                           LIMIT %s) AS sub)
+                """,
                 (session_id, session_id, 5),
             )
             # 提交事务
@@ -163,9 +162,10 @@ class MySQLClient:
             # 删除指定 session_id 的所有对话记录
             self.cursor.execute(
                 """
-                DELETE FROM conversations
+                DELETE
+                FROM conversations
                 WHERE session_id = %s
-            """,
+                """,
                 (session_id,),
             )
             # 提交事务

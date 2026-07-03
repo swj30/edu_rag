@@ -23,13 +23,23 @@ class RAGSystem:
 
 
 
-    def generate_answer(self, query, source_filter=None) -> str:
+    def generate_answer(self, query, source_filter=None, history=None) -> str:
         """
             根据用户的问题调用大模型生成答案
             :param query: 问题
             :param source_filter: 学科
             :return: 问题的答案
         """
+
+        # 获取历史记录, 拼接为字符串
+        if history is None:
+            history = []
+        else:
+            history = history[:5]
+        # 历史记录拼接为字符串
+        history_context = "\n".join(
+            [f"Q:{i['question']}\nA:{i['answer']}" for i in history]
+        )
 
         # 1. 调用Bert分类模型得到用户问题类型 通用知识/专业咨询
         # category = classifier.predict_category(query)
@@ -63,6 +73,7 @@ class RAGSystem:
             print(f"上下文: {context}")
             prompt = RAGPrompts.rag_prompt().format(
                 context=context,
+                history=history,
                 question=query,
                 phone=conf.CUSTOMER_SERVICE_PHONE
             )
@@ -92,5 +103,5 @@ class RAGSystem:
 rag_system = RAGSystem()
 
 if __name__ == '__main__':
-    answer = rag_system.generate_answer("LLM背景知识", source_filter="ai")
+    answer = rag_system.generate_answer("LLM背景知识", source_filter="ai", session_id="101")
     print(answer)
