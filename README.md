@@ -32,6 +32,13 @@ edu_rag/
 │   ├── config.py                  # 配置加载（读取 config.ini）
 │   └── logger.py                  # 日志初始化
 ├── rag_qa/                        # RAG 核心模块
+│   ├── core/                      # RAG 核心逻辑
+│   │   ├── document_processor.py  # 文档加载与切分（多格式统一入口）
+│   │   ├── vector_store.py        # Milvus 向量库创建、入库与混合检索
+│   │   ├── query_classifier.py    # 问题分类（通用知识 / 专业知识）
+│   │   ├── strategy_selector.py   # 检索策略选择（直接检索 / 假设问题 / 子查询 / 回溯）
+│   │   ├── prompts.py             # 提示词模板（RAG、策略选择、HyDE 等）
+│   │   └── rag_system.py          # RAG 系统主流程（分类 → 检索 → 生成）
 │   ├── edu_document_loaders/      # 文档加载器（含 OCR）
 │   │   ├── edu_ocr.py             # OCR 引擎封装
 │   │   ├── edu_pdfloader.py       # PDF 加载器
@@ -41,13 +48,20 @@ edu_rag/
 │   ├── edu_text_spliter/          # 文本切分器
 │   │   ├── edu_chinese_recursive_text_splitter.py  # 中文递归切分
 │   │   └── edu_model_text_spliter.py               # 语义模型切分
-│   └── db_util/                   # 数据库客户端
-│       ├── mysql_client.py        # MySQL 操作
-│       └── redis_client.py        # Redis 操作
+│   ├── db_util/                   # 数据库客户端
+│   │   ├── mysql_client.py        # MySQL 操作
+│   │   └── redis_client.py        # Redis 操作
+│   └── main.py                    # 应用入口
 ├── data/                          # 示例数据
-│   └── JP学科知识问答.csv         # 学科问答知识库样本
+│   ├── JP学科知识问答.csv         # 学科问答知识库样本
+│   └── ai_data/                   # 多格式文档示例（PDF / Word / PPT / 图片）
+├── test/                          # 测试与调试脚本
+│   ├── 1.json
+│   └── 向量模型.py
+├── logs/                          # 运行日志（由 config.ini 配置路径）
 ├── config.ini                     # 项目配置文件
 ├── requirements.txt               # Python 依赖
+├── superman.svg                   # 项目图标
 └── README.md
 ```
 
