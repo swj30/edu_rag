@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduRAG</title>
+  <link rel="icon" href="/static/superman.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-subtle: #f7f7f8;
+      --bg-hover: #ececf1;
+      --sidebar: #f9f9f9;
+      --border: #e5e5e5;
+      --text: #0d0d0d;
+      --text-secondary: #6e6e80;
+      --text-tertiary: #8e8ea0;
+      --accent: #0d0d0d;
+      --accent-hover: #2d2d2d;
+      --user-bg: #f4f4f4;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 24px;
+      --shadow-input: 0 0 0 1px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+      --transition: 0.15s ease;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 4px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .app-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand span {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .side-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      cursor: pointer;
+      transition: background var(--transition);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .side-btn:hover { background: var(--bg-hover); }
+    .side-btn svg { flex-shrink: 0; color: var(--text-secondary); }
+
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 4px;
+    }
+
+    .sidebar-section {
+      padding: 4px;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+      padding: 0 4px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: #b4b4b4;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.04);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.ok { background: #10a37f; }
+    .status-dot.err { background: #ef4444; }
+    .status-dot.pending { background: #d4d4d4; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 8px;
+    }
+
+    /* ── Main ── */
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .topbar {
+      flex-shrink: 0;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid transparent;
+      position: relative;
+    }
+
+    .topbar-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    .mobile-menu {
+      display: none;
+      position: absolute;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+    }
+    .mobile-menu:hover { background: var(--bg-subtle); }
+
+    .chat-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .messages::-webkit-scrollbar { display: none; }
+
+    .messages-inner {
+      max-width: 768px;
+      margin: 0 auto;
+      padding: 24px 24px 8px;
+      width: 100%;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100dvh - 200px);
+      padding: 32px 16px;
+      text-align: center;
+    }
+
+    .empty-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .empty-state h2 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+
+    .suggestions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .suggestion {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: left;
+      transition: background var(--transition), border-color var(--transition);
+      line-height: 1.4;
+    }
+    .suggestion:hover {
+      background: var(--bg-subtle);
+      border-color: #d4d4d4;
+      color: var(--text);
+    }
+
+    /* ── Messages ── */
+    .message {
+      display: flex;
+      gap: 16px;
+      padding: 20px 0;
+      animation: fadeUp 0.3s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message + .message { border-top: 1px solid var(--border); }
+
+    .msg-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    .message.user .msg-icon {
+      background: #5436da;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .message.bot .msg-icon {
+      background: transparent;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .msg-body {
+      flex: 1;
+      min-width: 0;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.user .msg-body {
+      color: var(--text);
+    }
+
+    .msg-body.loading {
+      display: flex;
+      align-items: center;
+      min-height: 28px;
+    }
+
+    .typing-dots {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 20px;
+    }
+
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+      animation: dotPulse 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dots span:nth-child(1) { animation-delay: 0s; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.16s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.32s; }
+
+    @keyframes dotPulse {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .msg-body.streaming::after {
+      content: "";
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--text);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.9s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Composer ── */
+    .composer-wrap {
+      flex-shrink: 0;
+      padding: 12px 24px 20px;
+    }
+
+    .composer-inner {
+      max-width: 768px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .error-toast {
+      display: none;
+      margin-bottom: 10px;
+      padding: 10px 14px;
+      background: #fef2f2;
+      border-radius: var(--radius-sm);
+      color: #991b1b;
+      font-size: 13px;
+      text-align: center;
+    }
+    .error-toast.show { display: block; }
+
+    .composer {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 10px 10px 10px 16px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-input);
+      transition: box-shadow var(--transition);
+    }
+
+    .composer:focus-within {
+      box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 4px 20px rgba(0,0,0,.08);
+    }
+
+    .composer textarea {
+      flex: 1;
+      border: none;
+      background: transparent;
+      resize: none;
+      outline: none;
+      font-size: 15px;
+      line-height: 1.5;
+      max-height: 72px;
+      padding: 6px 0;
+      overflow: hidden;
+      color: var(--text);
+    }
+
+    .composer textarea::placeholder { color: var(--text-tertiary); }
+
+    .btn-send {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background var(--transition), opacity var(--transition);
+    }
+
+    .btn-send:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .composer-hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 10px;
+    }
+
+    /* ── Mobile sidebar overlay ── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.3);
+      z-index: 90;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .sidebar-overlay.open { display: block; opacity: 1; }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 4px 0 24px rgba(0,0,0,.08);
+      }
+      .sidebar.open { transform: translateX(0); }
+
+      .mobile-menu { display: flex; }
+
+      .empty-state h2 { font-size: 22px; }
+      .suggestions { grid-template-columns: 1fr; }
+
+      .messages-inner { padding: 16px 16px 8px; }
+      .composer-wrap { padding: 8px 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="/static/superman.svg" alt="EduRAG" class="app-icon" />
+        </div>
+        <span>EduRAG</span>
+      </div>
+
+      <button class="side-btn" id="newSessionBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新建对话
+      </button>
+      <button class="side-btn" id="clearBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        清空对话
+      </button>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="field">
+          <label for="sessionId">会话</label>
+          <input id="sessionId" type="text" placeholder="自动生成" />
+        </div>
+        <div class="field">
+          <label for="sourceFilter">学科</label>
+          <select id="sourceFilter">
+            <option value="">全部</option>
+            <option value="ai">AI</option>
+            <option value="java">Java</option>
+            <option value="test">Test</option>
+            <option value="ops">Ops</option>
+            <option value="bigdata">BigData</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status-pill">
+          <span id="statusDot" class="status-dot pending"></span>
+          <span id="statusText">连接中</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="菜单">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <span class="topbar-title">EduRAG</span>
+      </header>
+
+      <div class="chat-wrap">
+        <div id="messages" class="messages">
+          <div class="messages-inner" id="messagesInner">
+            <div class="empty-state" id="emptyState">
+              <div class="empty-logo">
+                <img src="/static/superman.svg" alt="EduRAG" class="app-icon" />
+              </div>
+              <h2>有什么可以帮你的？</h2>
+              <div class="suggestions">
+                <button class="suggestion" data-q="Java的基础语法有哪些">Java 基础语法有哪些？</button>
+                <button class="suggestion" data-q="Python中列表和元组的区别">列表和元组有什么区别？</button>
+                <button class="suggestion" data-q="什么是机器学习">什么是机器学习？</button>
+                <button class="suggestion" data-q="如何理解面向对象编程">如何理解面向对象编程？</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <div class="composer-inner">
+            <div id="errorBanner" class="error-toast"></div>
+            <div class="composer">
+              <textarea id="queryInput" rows="1" placeholder="发送消息"></textarea>
+              <button class="btn-send" id="sendBtn" aria-label="发送">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              </button>
+            </div>
+            <p class="composer-hint">EduRAG 可能会犯错，请核实重要信息</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = "";
+
+    const ICON_URL = "/static/superman.svg";
+
+    const sessionIdInput = document.getElementById("sessionId");
+    const sourceFilterSelect = document.getElementById("sourceFilter");
+    const messagesEl = document.getElementById("messages");
+    const messagesInner = document.getElementById("messagesInner");
+    const emptyState = document.getElementById("emptyState");
+    const queryInput = document.getElementById("queryInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const newSessionBtn = document.getElementById("newSessionBtn");
+    const errorBanner = document.getElementById("errorBanner");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    let isStreaming = false;
+
+    function generateSessionId() {
+      return "sess_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function initSession() {
+      let sid = localStorage.getItem("edurag_session_id");
+      if (!sid) {
+        sid = generateSessionId();
+        localStorage.setItem("edurag_session_id", sid);
+      }
+      sessionIdInput.value = sid;
+    }
+
+    function toggleSidebar(open) {
+      sidebar.classList.toggle("open", open);
+      sidebarOverlay.classList.toggle("open", open);
+    }
+
+    function showError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.classList.add("show");
+    }
+
+    function hideError() {
+      errorBanner.classList.remove("show");
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (data.status === "ok") {
+          statusDot.className = "status-dot ok";
+          statusText.textContent = "服务正常";
+        } else throw new Error();
+      } catch {
+        statusDot.className = "status-dot err";
+        statusText.textContent = "服务离线";
+      }
+    }
+
+    function hideEmptyState() {
+      if (emptyState) emptyState.remove();
+    }
+
+    function emptyStateHTML() {
+      return `
+        <div class="empty-state" id="emptyState">
+          <div class="empty-logo">
+            <img src="/static/superman.svg" alt="EduRAG" class="app-icon" />
+          </div>
+          <h2>有什么可以帮你的？</h2>
+          <div class="suggestions">
+            <button class="suggestion" data-q="Java的基础语法有哪些">Java 基础语法有哪些？</button>
+            <button class="suggestion" data-q="Python中列表和元组的区别">列表和元组有什么区别？</button>
+            <button class="suggestion" data-q="什么是机器学习">什么是机器学习？</button>
+            <button class="suggestion" data-q="如何理解面向对象编程">如何理解面向对象编程？</button>
+          </div>
+        </div>`;
+    }
+
+    function loadingDotsHTML() {
+      return '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    }
+
+    function setBodyLoading(body, loading) {
+      if (loading) {
+        body.classList.add("loading");
+        body.classList.remove("streaming");
+        body.innerHTML = loadingDotsHTML();
+      } else {
+        body.classList.remove("loading");
+        body.innerHTML = "";
+      }
+    }
+
+    function appendMessage(role, content, options = {}) {
+      const { streaming = false, loading = false } = options;
+      hideEmptyState();
+
+      const msg = document.createElement("div");
+      msg.className = `message ${role}`;
+
+      const icon = document.createElement("div");
+      icon.className = "msg-icon";
+      if (role === "user") {
+        icon.textContent = "你";
+      } else {
+        icon.innerHTML = `<img src="${ICON_URL}" alt="AI" class="app-icon" />`;
+      }
+
+      const body = document.createElement("div");
+      body.className = "msg-body";
+      if (loading) {
+        setBodyLoading(body, true);
+      } else {
+        body.textContent = content;
+        if (streaming) body.classList.add("streaming");
+      }
+
+      msg.appendChild(icon);
+      msg.appendChild(body);
+      messagesInner.appendChild(msg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      return body;
+    }
+
+    function autoResizeTextarea() {
+      queryInput.style.height = "auto";
+      queryInput.style.height = Math.min(queryInput.scrollHeight, 72) + "px";
+    }
+
+    async function sendQuery() {
+      const query = queryInput.value.trim();
+      const sessionId = sessionIdInput.value.trim();
+      const sourceFilter = sourceFilterSelect.value || null;
+
+      if (!query || isStreaming) return;
+      if (!sessionId) {
+        showError("会话 ID 不能为空");
+        return;
+      }
+
+      hideError();
+      toggleSidebar(false);
+      isStreaming = true;
+      sendBtn.disabled = true;
+      queryInput.value = "";
+      autoResizeTextarea();
+
+      appendMessage("user", query);
+      const botBody = appendMessage("bot", "", { loading: true });
+      let hasContent = false;
+
+      const body = { query, session_id: sessionId };
+      if (sourceFilter) body.source_filter = sourceFilter;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/query/stream`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.detail || `请求失败 (${response.status})`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let answer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data:")) continue;
+            const jsonStr = line.slice(5).trim();
+            if (!jsonStr) continue;
+
+            let data;
+            try { data = JSON.parse(jsonStr); } catch { continue; }
+
+            if (data.error) throw new Error(data.token || "查询出错");
+            if (data.token) {
+              if (!hasContent) {
+                setBodyLoading(botBody, false);
+                botBody.classList.add("streaming");
+                hasContent = true;
+              }
+              answer += data.token;
+              botBody.textContent = answer;
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+            if (data.done) botBody.classList.remove("streaming");
+          }
+        }
+
+        if (!answer) {
+          setBodyLoading(botBody, false);
+          botBody.textContent = "未获取到回答，请重试。";
+          botBody.classList.remove("streaming");
+        }
+      } catch (err) {
+        setBodyLoading(botBody, false);
+        botBody.textContent = err.message;
+        botBody.classList.remove("streaming");
+        showError(err.message);
+      } finally {
+        isStreaming = false;
+        sendBtn.disabled = false;
+        queryInput.focus();
+      }
+    }
+
+    clearBtn.addEventListener("click", () => {
+      messagesInner.innerHTML = emptyStateHTML();
+      bindSuggestions();
+      hideError();
+      toggleSidebar(false);
+    });
+
+    newSessionBtn.addEventListener("click", () => {
+      const sid = generateSessionId();
+      localStorage.setItem("edurag_session_id", sid);
+      sessionIdInput.value = sid;
+      clearBtn.click();
+    });
+
+    sessionIdInput.addEventListener("change", () => {
+      const sid = sessionIdInput.value.trim();
+      if (sid) localStorage.setItem("edurag_session_id", sid);
+    });
+
+    sendBtn.addEventListener("click", sendQuery);
+    mobileMenu.addEventListener("click", () => toggleSidebar(true));
+    sidebarOverlay.addEventListener("click", () => toggleSidebar(false));
+
+    queryInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendQuery();
+      }
+    });
+    queryInput.addEventListener("input", autoResizeTextarea);
+
+    function bindSuggestions() {
+      document.querySelectorAll(".suggestion").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          queryInput.value = btn.dataset.q;
+          autoResizeTextarea();
+          sendQuery();
+        });
+      });
+    }
+
+    bindSuggestions();
+    initSession();
+    checkHealth();
+    queryInput.focus();
+  </script>
+</body>
+</html>
