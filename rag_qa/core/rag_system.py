@@ -75,13 +75,19 @@ class RAGSystem:
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
+                timeout=30,  # 设置 30 秒超时
+                stream=True,  # 启用流式输出
             )
-            answer = completion.choices[0].message.content
+            # 遍历流式输出的每个 chunk
+            for chunk in completion:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    # 获取当前 chunk 的内容
+                    content = chunk.choices[0].delta.content
+                    # 逐 token 返回，供前端实时显示
+                    yield content
         except Exception as e:
             logger.error(e)
             answer = f"抱歉，处理您的知识问题时出错。请联系人工客服：{conf.CUSTOMER_SERVICE_PHONE}"
-
-        return answer
 
 rag_system = RAGSystem()
 
